@@ -111,6 +111,23 @@ class TurboQuantIndex:
             self._norms = mx.concatenate([self._norms, norms], axis=0)
         self._n += n
 
+    def prepare(self) -> None:
+        """Materialize any pending MLX graph nodes so the first
+        :meth:`search` call doesn't pay a deferred-compute cost.
+
+        Equivalent in spirit to :meth:`turbovec.TurboQuantIndex.prepare`
+        but with different mechanics: MLX builds operations lazily, so
+        repeated ``add`` calls leave a chain of unmaterialized
+        ``mx.concatenate`` nodes on ``_packed_codes`` / ``_norms``.
+        This method forces evaluation, collapsing them into single
+        contiguous buffers.
+
+        Safe to call on an empty index (no-op).
+        """
+        if self._packed_codes is not None:
+            mx.eval(self._packed_codes, self._norms)
+        mx.eval(self._rotation, self._boundaries, self._centroids)
+
     def swap_remove(self, idx: int) -> int:
         """Remove the vector at ``idx`` by swapping with the last vector.
 
@@ -278,6 +295,10 @@ class IdMapIndex:
             slot = base + i
             self._slot_to_id.append(id_int)
             self._id_to_slot[id_int] = slot
+
+    def prepare(self) -> None:
+        """Forward to :meth:`TurboQuantIndex.prepare` on the inner index."""
+        self._inner.prepare()
 
     def remove(self, id_: int) -> bool:
         """Remove the vector with external id ``id_``.

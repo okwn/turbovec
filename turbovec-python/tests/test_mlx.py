@@ -508,6 +508,36 @@ def test_id_map_remove_round_trips_through_file(tmp_path):
         assert id_ in loaded
 
 
+def test_prepare_is_safe_on_empty_index():
+    from turbovec.mlx import IdMapIndex as MlxIdMap
+
+    TurboQuantIndex(dim=64, bit_width=4).prepare()
+    MlxIdMap(dim=64, bit_width=4).prepare()
+
+
+def test_prepare_materializes_after_many_adds():
+    """After repeated `add` calls leave a long concat graph,
+    `prepare()` should evaluate it without changing the visible state.
+    """
+    dim = 128
+    index = TurboQuantIndex(dim=dim, bit_width=4)
+    for seed in range(8):
+        index.add(_random_unit_vectors(4, dim, seed=seed))
+    n = len(index)
+    codes_before = np.asarray(index._packed_codes).copy()
+
+    index.prepare()
+
+    assert len(index) == n
+    codes_after = np.asarray(index._packed_codes)
+    assert np.array_equal(codes_before, codes_after)
+
+    # Search still works after prepare.
+    scores, idx = index.search(_random_unit_vectors(2, dim, seed=99), k=3)
+    assert scores.shape == (2, 3)
+    assert idx.shape == (2, 3)
+
+
 def test_id_map_remove_matches_rust_post_search_set():
     """After the same removal sequence on both backends, the surviving
     id sets agree."""
