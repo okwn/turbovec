@@ -112,3 +112,13 @@ def test_write_and_load_round_trip(tmp_path):
 def test_load_rejects_nonexistent_file():
     with pytest.raises(IOError):
         IdMapIndex.load("/nonexistent/path/does-not-exist.tvim")
+
+
+@pytest.mark.parametrize("k", [0, 1, 3])
+def test_search_k_edge_cases(k):
+    """Search with k=0, 1, and 3 all return correctly-shaped arrays."""
+    idx = IdMapIndex(dim=128, bit_width=4)
+    idx.add(unit_vectors(5, 128))
+
+    _, ids = idx.search(unit_vectors(1, 128), k=k)
+    assert ids.shape == (1, k), f"k={k}: expected shape (1, {k}), got {ids.shape}"
