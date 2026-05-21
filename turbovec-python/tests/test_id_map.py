@@ -112,3 +112,12 @@ def test_write_and_load_round_trip(tmp_path):
 def test_load_rejects_nonexistent_file():
     with pytest.raises(IOError):
         IdMapIndex.load("/nonexistent/path/does-not-exist.tvim")
+
+
+def test_add_with_ids_rejects_duplicate_in_batch():
+    """Regression: duplicate IDs within a single batch must raise, not silently overwrite."""
+    idx = IdMapIndex(dim=128, bit_width=4)
+    vectors = unit_vectors(3, 128, seed=0)
+    ids = np.array([10, 20, 10], dtype=np.uint64)  # 10 appears twice
+    with pytest.raises(BaseException):
+        idx.add_with_ids(vectors, ids)

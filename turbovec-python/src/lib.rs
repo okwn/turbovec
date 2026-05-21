@@ -24,13 +24,15 @@ impl TurboQuantIndex {
         }
     }
 
-    fn add(&mut self, vectors: PyReadonlyArray2<f32>) {
+    fn add(&mut self, vectors: PyReadonlyArray2<f32>) -> PyResult<()> {
         let arr = vectors.as_array();
         let dim = arr.ncols();
         let slice = arr.as_slice().expect("vectors must be contiguous");
         // `add_2d` handles both eager (dim must match) and lazy (locks
         // dim on first call) cases.
-        self.inner.add_2d(slice, dim);
+        self.inner
+            .add_2d(slice, dim)
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
     }
 
     /// Run a top-`k` search against the index.
@@ -113,6 +115,19 @@ impl TurboQuantIndex {
         self.inner.len()
     }
 
+    fn __repr__(&self) -> String {
+        let dim = self
+            .inner
+            .dim_opt()
+            .map_or_else(|| "None".to_string(), |d| d.to_string());
+        format!(
+            "turbovec.TurboQuantIndex(dim={}, bit_width={}, n_vectors={})",
+            dim,
+            self.inner.bit_width(),
+            self.inner.len()
+        )
+    }
+
     /// Vector dimensionality. Returns ``None`` when the index was
     /// constructed lazily (no ``dim=``) and hasn't seen an add yet;
     /// otherwise an ``int``.
@@ -151,20 +166,22 @@ impl IdMapIndex {
     /// Add `n = vectors.shape[0]` vectors with the given external `ids`.
     ///
     /// `ids` must be a 1-D array of `uint64` with length equal to
-    /// `vectors.shape[0]`. Raises if any id is already present or if the
-    /// lengths don't match. On a lazy index, this call commits the
-    /// dimensionality from `vectors.shape[1]`.
+    /// `vectors.shape[0]`. Raises `ValueError` if any id is already
+    /// present or if the lengths don't match. On a lazy index, this
+    /// call commits the dimensionality from `vectors.shape[1]`.
     fn add_with_ids(
         &mut self,
         vectors: PyReadonlyArray2<f32>,
         ids: PyReadonlyArray1<u64>,
-    ) {
+    ) -> PyResult<()> {
         let v = vectors.as_array();
         let dim = v.ncols();
         let v_slice = v.as_slice().expect("vectors must be contiguous");
         let i = ids.as_array();
         let i_slice = i.as_slice().expect("ids must be contiguous");
-        self.inner.add_with_ids_2d(v_slice, dim, i_slice);
+        self.inner
+            .add_with_ids_2d(v_slice, dim, i_slice)
+            .map_err(|e| pyo3::exceptions::PyValueError::new_err(e.to_string()))
     }
 
     /// Remove the vector with external id `id`. Returns `True` if it was
@@ -267,6 +284,19 @@ impl IdMapIndex {
 
     fn __len__(&self) -> usize {
         self.inner.len()
+    }
+
+    fn __repr__(&self) -> String {
+        let dim = self
+            .inner
+            .dim_opt()
+            .map_or_else(|| "None".to_string(), |d| d.to_string());
+        format!(
+            "turbovec.IdMapIndex(dim={}, bit_width={}, n_vectors={})",
+            dim,
+            self.inner.bit_width(),
+            self.inner.len()
+        )
     }
 
     fn __contains__(&self, id: u64) -> bool {
