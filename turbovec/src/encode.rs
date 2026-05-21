@@ -41,7 +41,9 @@ pub fn encode(
     let unit_mat = ArrayView2::from_shape((n, dim), &unit_flat).unwrap();
     let rot_mat = ArrayView2::from_shape((dim, dim), rotation).unwrap();
     let rotated_mat = unit_mat.dot(&rot_mat.t());
-    let rotated = rotated_mat.as_slice().unwrap();
+    let rotated = rotated_mat.as_slice().ok_or_else(|| {
+        "encode: rotation result is not contiguous row-major slice"
+    })?;
 
     // 3. Quantize: for each boundary, codes += (rotated > boundary)
     let mut codes = vec![0u8; n * dim];
