@@ -127,7 +127,7 @@ Writes two files under the given folder path:
 - `index.tvim` — the `IdMapIndex` payload.
 - `docstore.json` — JSON-encoded document text, metadata, and id maps.
 
-Document metadata must be JSON-serializable — same constraint Agno's `LanceDb` imposes on its payload column. The side-car carries a `schema_version` field; loaders refuse to deserialize unknown versions.
+Document metadata must be JSON-serializable — same constraint Agno's `LanceDb` imposes on its payload columnn. The side-car carries a `schema_version` field; loaders refuse to deserialize unknown versions.
 
 ## Async
 
