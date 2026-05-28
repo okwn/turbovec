@@ -76,7 +76,7 @@ def test_mask_shrinks_effective_k():
     assert indices.shape == (2, 3)
 
 
-def test_mask_all_false_returns_empty_columns():
+def test_mask_all_false_returns_empty_columnns():
     n = 50
     idx = TurboQuantIndex(dim=DIM, bit_width=4)
     idx.add(unit_vectors(n, seed=9))
