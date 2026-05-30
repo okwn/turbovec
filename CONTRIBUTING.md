@@ -34,3 +34,6 @@ See the [Building](README.md#building) and [Running benchmarks](README.md#runnin
 ```bash
 pip install -e ".[langchain,llama-index,haystack,agno]"
 ```
+
+## Contributors
+- Documentation improvements (2026)
